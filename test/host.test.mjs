@@ -62,6 +62,10 @@ if (session.surface.nodes.length !== 2) throw new Error('surface not truncated: 
 if (session.lastAppend.type !== 'system/message') throw new Error('placeholder must be system/message');
 if (!(session.lastAppend.data.turn > 0) || !(session.lastAppend.data.step > 0)) throw new Error('turn/step must be positive');
 if (typeof session.lastAppend.data.message.id !== 'string' || session.lastAppend.data.message.id.length === 0) throw new Error('system message id must be nonempty');
+const sourceKind = session.lastAppend.data.message.source?.kind;
+if (typeof sourceKind !== 'string' || sourceKind.length === 0 || sourceKind === 'plugin') {
+  throw new Error('system message must carry a producer-owned source kind, got ' + JSON.stringify(sourceKind));
+}
 if (session.lastAppend.data.localRewind.startSeq !== 1) throw new Error('missing localRewind marker');
 if (!session.lastAppend.data.localRewind.turns.includes(2)) throw new Error('missing shadowed turn');
 if (session.lastAppend.data.localRewind.fromTurn !== 2) throw new Error('wrong fromTurn');

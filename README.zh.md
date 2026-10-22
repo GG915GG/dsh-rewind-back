@@ -35,7 +35,9 @@ DSH 有压缩、分支和会话级操作，但没法快速收回一条说错的�
 - 注册 `/rewind` 命令。
 - 追加一条空内容的 `system/message` 事件，带 `surfaceOp: { op: "replace", startSeq, endSeq }`，与 compaction
   使用同一套 surface replacement 机制。0.2.1 里 `assistant/message` 不允许携带 `sourceEventSeqs`，所以占位
-  事件用 `system/message`；它内容为空，会被 `deriveEventMessage` 跳过，因此永远进不了模型上下文。
+  事件用 `system/message`；它内容为空，会被 `deriveEventMessage` 跳过，因此永远进不了模型上下文。消息必须
+  带 producer-owned 的 `source.kind`（这里是 `"dsh-local-rewind"`）：session format v4 在加载历史时会拒绝
+  `source.kind` 缺失、为空或等于 `"plugin"` 的消息。
 - 把被隐藏的范围和回合记录在 `data.localRewind` 里，并通过 `localRewind` session projection 暴露给浏览器。
 
 **浏览器半边**（`lib/client.js`）

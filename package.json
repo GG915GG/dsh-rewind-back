@@ -1,6 +1,6 @@
 {
   "name": "dsh-local-rewind",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local rewind/undo button for DeepSeek Harness Web: retract a message and everything after it without polluting the model context.",
   "type": "module",
   "main": "lib/index.js",
