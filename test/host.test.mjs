@@ -24,14 +24,18 @@ if (!projection) throw new Error('projection not registered');
 function makeSession(messages) {
   const events = [];
   const surface = { nodes: [] };
+  const appends = [];
   let lastAppend = null;
   const append = (type, data, options) => {
     const seq = events.length;
     events[seq] = { seq, type, data, time: Date.now() };
-    lastAppend = { type, data, options };
-    const start = surface.nodes.indexOf(options.surfaceOp.startSeq);
-    const end = surface.nodes.indexOf(options.surfaceOp.endSeq);
-    surface.nodes.splice(start, end - start + 1, seq);
+    lastAppend = { type, data, options, seq };
+    appends.push(lastAppend);
+    if (options?.surfaceOp !== undefined) {
+      const start = surface.nodes.indexOf(options.surfaceOp.startSeq);
+      const end = surface.nodes.indexOf(options.surfaceOp.endSeq);
+      surface.nodes.splice(start, end - start + 1, seq);
+    }
     return { seq };
   };
   for (const [index, text] of messages.entries()) {
@@ -48,6 +52,7 @@ function makeSession(messages) {
     events,
     surface,
     append,
+    appends,
     eventAt(seq) { return events[seq]; },
     get lastAppend() { return lastAppend; },
   };
@@ -59,18 +64,25 @@ const result = await command.handler({ agent: { session }, rawInput: `b64:${enco
 console.log('b64 result:', JSON.stringify(result));
 if (result.kind !== 'success') throw new Error('b64 handler failed');
 if (session.surface.nodes.length !== 2) throw new Error('surface not truncated: ' + JSON.stringify(session.surface.nodes));
-if (session.lastAppend.type !== 'system/message') throw new Error('placeholder must be system/message');
-if (!(session.lastAppend.data.turn > 0) || !(session.lastAppend.data.step > 0)) throw new Error('turn/step must be positive');
-if (typeof session.lastAppend.data.message.id !== 'string' || session.lastAppend.data.message.id.length === 0) throw new Error('system message id must be nonempty');
-const sourceKind = session.lastAppend.data.message.source?.kind;
-if (typeof sourceKind !== 'string' || sourceKind.length === 0 || sourceKind === 'plugin') {
-  throw new Error('system message must carry a producer-owned source kind, got ' + JSON.stringify(sourceKind));
+const order = session.appends.map((item) => item.type).join(',');
+if (order !== 'turn/start,step/start,system/message,step/end,turn/end') {
+  throw new Error('unexpected append order: ' + order);
 }
-if (session.lastAppend.data.localRewind.startSeq !== 1) throw new Error('missing localRewind marker');
-if (!session.lastAppend.data.localRewind.turns.includes(2)) throw new Error('missing shadowed turn');
-if (session.lastAppend.data.localRewind.fromTurn !== 2) throw new Error('wrong fromTurn');
-if (session.lastAppend.options.surfaceOp.startSeq !== 1 || session.lastAppend.options.surfaceOp.endSeq !== 2) {
-  throw new Error('wrong surfaceOp range: ' + JSON.stringify(session.lastAppend.options.surfaceOp));
+const placeholder = session.appends.find((item) => item.type === 'system/message');
+if (placeholder === undefined) throw new Error('missing system/message placeholder');
+if (placeholder.data.turn !== 4 || placeholder.data.step !== 1) {
+  throw new Error('placeholder must use the synthetic turn/step, got ' + JSON.stringify([placeholder.data.turn, placeholder.data.step]));
+}
+if (typeof placeholder.data.message.id !== 'string' || placeholder.data.message.id.length === 0) throw new Error('system message id must be nonempty');
+const sourceKind = placeholder.data.message.source?.kind;
+if (sourceKind !== 'system-prompt') {
+  throw new Error('system message must carry the system-prompt source, got ' + JSON.stringify(sourceKind));
+}
+if (placeholder.data.localRewind.startSeq !== 1) throw new Error('missing localRewind marker');
+if (!placeholder.data.localRewind.turns.includes(2)) throw new Error('missing shadowed turn');
+if (placeholder.data.localRewind.fromTurn !== 2) throw new Error('wrong fromTurn');
+if (placeholder.options.surfaceOp.startSeq !== 1 || placeholder.options.surfaceOp.endSeq !== 2) {
+  throw new Error('wrong surfaceOp range: ' + JSON.stringify(placeholder.options.surfaceOp));
 }
 const projectionState = projection.apply(
   { ranges: [], turns: [], fromTurns: [] },

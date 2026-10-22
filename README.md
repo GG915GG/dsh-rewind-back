@@ -41,9 +41,11 @@ everything that followed it. This plugin adds a per-message button:
 - Appends an empty `system/message` event with
   `surfaceOp: { op: "replace", startSeq, endSeq }` — the same surface-replacement mechanism compaction uses.
   `assistant/message` may not carry `sourceEventSeqs` in 0.2.1, so the placeholder is a `system/message`;
-  it has empty content and is skipped by `deriveEventMessage`, hence it never reaches the model. The message
-  must carry a producer-owned `source.kind` (here `"dsh-local-rewind"`): session format v4 rejects messages
-  whose `source.kind` is missing, empty, or `"plugin"` when the history is loaded.
+  it has empty content and is skipped by `deriveEventMessage`, hence it never reaches the model.
+- Session format v4 also requires a `system/message` to (a) carry `source.kind: "system-prompt"` and
+  (b) match an **open turn and step**. The command runs between turns, so the host opens a short synthetic
+  turn/step, appends the placeholder, then closes them: `turn/start` → `step/start` → `system/message` →
+  `step/end` → `turn/end`.
 - Records the shadowed ranges/turns in `data.localRewind` and exposes them through a `localRewind`
   session projection.
 

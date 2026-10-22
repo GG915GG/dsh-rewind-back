@@ -1,14 +1,21 @@
 # Changelog
 
+## 0.2.0 — 2026-10-23
+
+- **Fix:** session format v4 has two separate rules that the old placeholder broke:
+  1. `system/message` must carry `source.kind: "system-prompt"` (the official system prompt producer).
+     A custom or missing kind fails history loading with `message must have system-prompt source` or
+     `requires a producer-owned source kind`.
+  2. `system/message` must belong to an **open turn and step**. The rewind command runs between turns, so the
+     host now opens a short synthetic turn/step, appends the placeholder, and closes them again
+     (`turn/start` → `step/start` → `system/message` → `step/end` → `turn/end`). The placeholder has empty
+     content and is skipped by `deriveEventMessage`, so the synthetic turn never reaches the model.
+- The rewind receipt and the `localRewind` projection are unchanged.
+
 ## 0.1.1 — 2026-10-22
 
-- **Fix:** the placeholder `system/message` now carries `source: { kind: "dsh-local-rewind" }`.
-  DSH 0.2.1's session format v4 requires every message to have a producer-owned `source.kind`; 0.1.0 wrote
-  placeholders without `source`, so any session that used rewind failed to load from history with
-  `SessionFormatError: format v4 message requires a producer-owned source kind`.
-- Sessions already damaged by 0.1.0 need their invalid placeholders removed; because v4 also requires
-  contiguous `seq` values, fill each removed seq with an empty `system/message` that has a valid `source.kind`
-  (no `surfaceOp`) instead of leaving a gap.
+- **Fix:** the placeholder `system/message` now carries a `source.kind` (v0.1.1 used `dsh-local-rewind`, which
+  still fails the v4 `system-prompt` requirement; use 0.2.0).
 
 ## 0.1.0 — 2026-10-22
 
