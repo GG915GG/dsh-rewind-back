@@ -1,0 +1,11 @@
+# dsh-local-rewind bundle patch
+#
+# config.receipt controls the "> rewind · 已撤回 …" command receipt:
+#   turn   (default) — visible until the next user turn starts
+#   always           — always visible
+#   hidden           — never visible
+- insert:
+    - id: local-rewind
+      name: dsh-local-rewind
+      config:
+        receipt: turn
