@@ -70,8 +70,8 @@ if (order !== 'user/message') {
 }
 const placeholder = session.appends.find((item) => item.type === 'user/message');
 if (placeholder === undefined) throw new Error('missing user/message placeholder');
-if (placeholder.data.role !== 'user' || placeholder.data.source?.kind !== 'local-rewind') {
-  throw new Error('placeholder must be a user/message with local-rewind source');
+if (placeholder.data.role !== 'user' || placeholder.data.source?.kind !== 'rewind-back') {
+  throw new Error('placeholder must be a user/message with rewind-back source');
 }
 if (placeholder.data.content?.[0]?.type !== 'text' || placeholder.data.content[0].text !== '\u200b') {
   throw new Error('placeholder content must be a zero-width text block');

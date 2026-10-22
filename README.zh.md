@@ -1,4 +1,4 @@
-# dsh-local-rewind
+# dsh-rewind-back
 
 [English](README.md) | 中文
 
@@ -36,7 +36,7 @@ DSH 有压缩、分支和会话级操作，但没法快速收回一条说错的�
 - 追加一条 `user/message` 事件，带 `surfaceOp: { op: "replace", startSeq, endSeq }`，与 compaction 使用同一套
   surface replacement 机制。session format v4 不允许在回合外写 `system/message`，而伪造 turn 会让运行时的
   turn 计数器错位，所以占位事件改用 `user/message`（回合外唯一允许的 surface 事件）。
-- 占位内容是一个零宽字符（`U+200B`），`source.kind: "local-rewind"`；浏览器 projection 会把这个占位行隐藏，
+- 占位内容是一个零宽字符（`U+200B`），`source.kind: "rewind-back"`；浏览器 projection 会把这个占位行隐藏，
   模型最多只看到一个零宽 token。
 - 把被隐藏的范围和回合记录在 `data.localRewind` 里，并通过 `localRewind` session projection 暴露给浏览器。
 
@@ -59,10 +59,10 @@ DSH 有压缩、分支和会话级操作，但没法快速收回一条说错的�
 把仓库克隆到一个固定位置，然后链接进 DSH profile：
 
 ```powershell
-git clone https://github.com/GG915GG/dsh-local-rewind.git C:\src\dsh-local-rewind
+git clone https://github.com/GG915GG/dsh-rewind-back.git C:\src\dsh-rewind-back
 
 # Windows：在 profile 里建 junction
-cmd /c mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-local-rewind" "C:\src\dsh-local-rewind"
+cmd /c mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-rewind-back" "C:\src\dsh-rewind-back"
 ```
 
 编辑 `%USERPROFILE%\.dsh\profiles\desktop\package.json`：
@@ -70,13 +70,13 @@ cmd /c mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-local-rew
 ```json
 {
   "dependencies": {
-    "dsh-local-rewind": "link:C:/src/dsh-local-rewind"
+    "dsh-rewind-back": "link:C:/src/dsh-rewind-back"
   },
   "dsh": {
     "profile": {
       "bundles": [
         "...",
-        "dsh-local-rewind"
+        "dsh-rewind-back"
       ]
     }
   }
@@ -85,7 +85,7 @@ cmd /c mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-local-rew
 
 完全重启 DSH。Host 半边在启动时加载，浏览器半边由 web app 提供。
 
-卸载：从 `dsh.profile.bundles` 和 `dependencies` 里删掉 `dsh-local-rewind`，然后重启 DSH。
+卸载：从 `dsh.profile.bundles` 和 `dependencies` 里删掉 `dsh-rewind-back`，然后重启 DSH。
 
 ## 用法
 
@@ -102,7 +102,7 @@ cmd /c mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-local-rew
 
 ```yaml
 # %USERPROFILE%\.dsh\profiles\desktop\cordis.patch.yml
-- id: local-rewind
+- id: rewind-back
   config:
     receipt: turn   # turn（默认）| always | hidden
 ```

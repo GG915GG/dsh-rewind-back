@@ -7,7 +7,7 @@
   turns, and fabricating a turn desynchronizes the runtime's own turn counter (the next real turn reuses the
   same number, producing `turn/start does not open the expected turn`). A `user/message` is the one surface
   event the v4 state machine allows between turns, so it does not touch the turn counter.
-- The replacement carries a single zero-width text block (`U+200B`) and `source.kind: "local-rewind"`.
+- The replacement carries a single zero-width text block (`U+200B`) and `source.kind: "rewind-back"`.
   The client projection hides the replacement row, so the transcript stays clean; the model sees at most one
   zero-width token instead of the removed history.
 - No synthetic `turn/start`/`step/start` events are written.
@@ -19,7 +19,7 @@
 
 ## 0.1.1 — 2026-10-22
 
-- **Fix:** the placeholder `system/message` now carries a `source.kind` (v0.1.1 used `dsh-local-rewind`, which
+- **Fix:** the placeholder `system/message` now carries a `source.kind` (v0.1.1 used `dsh-rewind-back`, which
   still fails the v4 `system-prompt` requirement; use 0.3.0).
 
 ## 0.1.0 — 2026-10-22

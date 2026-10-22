@@ -35,8 +35,8 @@ function makeElement(tag) {
     },
     querySelector(selector) {
       if (selector === 'button') return this.children.find((child) => child.tagName === 'button') ?? null;
-      if (selector === '.dsh-local-rewind-btn') {
-        return this.children.find((child) => child.className === 'dsh-local-rewind-btn') ?? null;
+      if (selector === '.dsh-rewind-back-btn') {
+        return this.children.find((child) => child.className === 'dsh-rewind-back-btn') ?? null;
       }
       return null;
     },
@@ -169,7 +169,7 @@ projectionValue.receipt = 'hidden';
 mod.apply(clientContext);
 if (receiptFresh.style.display !== 'none') throw new Error('hidden policy must hide the current receipt');
 
-const button = row.querySelector('.dsh-local-rewind-btn');
+const button = row.querySelector('.dsh-rewind-back-btn');
 if (!button) throw new Error('rewind button was not inserted');
 if (row.children[0] !== button) throw new Error('button is not before the copy button');
 if (typeof button.handlers.click !== 'function') throw new Error('button has no click handler');

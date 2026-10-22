@@ -1,4 +1,4 @@
-# dsh-local-rewind
+# dsh-rewind-back
 
 [中文](README.zh.md) | English
 
@@ -42,7 +42,7 @@ everything that followed it. This plugin adds a per-message button:
   surface-replacement mechanism compaction uses. Session format v4 does not allow `system/message` outside an
   open turn/step, and fabricating a turn desynchronizes the runtime's turn counter, so the replacement is a
   `user/message` (the one surface event allowed between turns).
-- The replacement's content is a single zero-width text block (`U+200B`) with `source.kind: "local-rewind"`;
+- The replacement's content is a single zero-width text block (`U+200B`) with `source.kind: "rewind-back"`;
   the client projection hides its transcript row, and the model sees at most one zero-width token.
 - Records the shadowed ranges/turns in `data.localRewind` and exposes them through a `localRewind`
   session projection.
@@ -66,10 +66,10 @@ Requirements: DSH Web `0.2.1-rc.2` (desktop app or `dsh --profile web`), Node.js
 Clone the repository somewhere stable, then link it into your DSH profile.
 
 ```powershell
-git clone https://github.com/GG915GG/dsh-local-rewind.git C:\src\dsh-local-rewind
+git clone https://github.com/GG915GG/dsh-rewind-back.git C:\src\dsh-rewind-back
 
 # Windows: create a junction inside the profile
-cmd /c mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-local-rewind" "C:\src\dsh-local-rewind"
+cmd /c mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-rewind-back" "C:\src\dsh-rewind-back"
 ```
 
 Edit `%USERPROFILE%\.dsh\profiles\desktop\package.json`:
@@ -77,13 +77,13 @@ Edit `%USERPROFILE%\.dsh\profiles\desktop\package.json`:
 ```json
 {
   "dependencies": {
-    "dsh-local-rewind": "link:C:/src/dsh-local-rewind"
+    "dsh-rewind-back": "link:C:/src/dsh-rewind-back"
   },
   "dsh": {
     "profile": {
       "bundles": [
         "...",
-        "dsh-local-rewind"
+        "dsh-rewind-back"
       ]
     }
   }
@@ -92,7 +92,7 @@ Edit `%USERPROFILE%\.dsh\profiles\desktop\package.json`:
 
 Restart DSH completely. The host half is loaded at startup; the browser half is served by the web app.
 
-To uninstall, remove `dsh-local-rewind` from `dsh.profile.bundles` and from `dependencies`, then restart DSH.
+To uninstall, remove `dsh-rewind-back` from `dsh.profile.bundles` and from `dependencies`, then restart DSH.
 
 ## Usage
 
@@ -111,7 +111,7 @@ The `> rewind · 已撤回 …` command receipt has a display policy:
 
 ```yaml
 # %USERPROFILE%\.dsh\profiles\desktop\cordis.patch.yml
-- id: local-rewind
+- id: rewind-back
   config:
     receipt: turn   # turn (default) | always | hidden
 ```

@@ -1,5 +1,5 @@
 {
-  "name": "dsh-local-rewind",
+  "name": "dsh-rewind-back",
   "version": "0.3.0",
   "description": "Local rewind/undo button for DeepSeek Harness Web: retract a message and everything after it without polluting the model context.",
   "type": "module",
@@ -21,11 +21,11 @@
   "author": "GG915GG",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/GG915GG/dsh-local-rewind.git"
+    "url": "git+https://github.com/GG915GG/dsh-rewind-back.git"
   },
-  "homepage": "https://github.com/GG915GG/dsh-local-rewind#readme",
+  "homepage": "https://github.com/GG915GG/dsh-rewind-back#readme",
   "bugs": {
-    "url": "https://github.com/GG915GG/dsh-local-rewind/issues"
+    "url": "https://github.com/GG915GG/dsh-rewind-back/issues"
   },
   "keywords": [
     "dsh",
