@@ -1,3 +1,18 @@
+> **Disclaimer — read before use**
+>
+> This is an experimental, unofficial plugin. It appends a `user/message` event with `surfaceOp: replace`
+> through DSH's internal session API and relies on DOM/projection internals. This is **not** a supported
+> public API.
+>
+> A DSH upgrade, a plugin bug, or an edge case can write an event that DSH rejects when the session is
+> reloaded, leaving that session unable to load (the **历史加载失败** screen). The original events are not
+> deleted from the append-only log and can usually be recovered, but until repaired you may not be able to
+> open the session.
+>
+> **Use at your own risk. Do not use this on important sessions without a backup. The author accepts no
+> liability for lost access, corrupted sessions, or data loss.** If you need a guaranteed-safe truncation,
+> use DSH's official compaction or fork instead.
+
 # dsh-rewind-back
 
 [中文](README.zh.md) | English
