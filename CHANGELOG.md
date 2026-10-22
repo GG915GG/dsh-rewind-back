@@ -1,21 +1,26 @@
 # Changelog
 
-## 0.2.0 — 2026-10-23
+## 0.3.0 — 2026-10-23
 
-- **Fix:** session format v4 has two separate rules that the old placeholder broke:
-  1. `system/message` must carry `source.kind: "system-prompt"` (the official system prompt producer).
-     A custom or missing kind fails history loading with `message must have system-prompt source` or
-     `requires a producer-owned source kind`.
-  2. `system/message` must belong to an **open turn and step**. The rewind command runs between turns, so the
-     host now opens a short synthetic turn/step, appends the placeholder, and closes them again
-     (`turn/start` → `step/start` → `system/message` → `step/end` → `turn/end`). The placeholder has empty
-     content and is skipped by `deriveEventMessage`, so the synthetic turn never reaches the model.
-- The rewind receipt and the `localRewind` projection are unchanged.
+- **Fix:** the surface replacement carrier is now a `user/message`, not a `system/message`.
+  Session format v4 requires `system/message` to belong to an open turn/step; the rewind command runs between
+  turns, and fabricating a turn desynchronizes the runtime's own turn counter (the next real turn reuses the
+  same number, producing `turn/start does not open the expected turn`). A `user/message` is the one surface
+  event the v4 state machine allows between turns, so it does not touch the turn counter.
+- The replacement carries a single zero-width text block (`U+200B`) and `source.kind: "local-rewind"`.
+  The client projection hides the replacement row, so the transcript stays clean; the model sees at most one
+  zero-width token instead of the removed history.
+- No synthetic `turn/start`/`step/start` events are written.
+
+## 0.2.0 — 2026-10-23 (withdrawn)
+
+- Tried wrapping the system/message placeholder in a synthetic turn/step. Format-valid, but the runtime turn
+  counter ignores plugin-created turns, so the next real turn collided with the synthetic one. Never published.
 
 ## 0.1.1 — 2026-10-22
 
 - **Fix:** the placeholder `system/message` now carries a `source.kind` (v0.1.1 used `dsh-local-rewind`, which
-  still fails the v4 `system-prompt` requirement; use 0.2.0).
+  still fails the v4 `system-prompt` requirement; use 0.3.0).
 
 ## 0.1.0 — 2026-10-22
 

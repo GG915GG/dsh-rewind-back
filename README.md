@@ -38,14 +38,12 @@ everything that followed it. This plugin adds a per-message button:
 **Host half** (`lib/index.js`)
 
 - Registers the `/rewind` command.
-- Appends an empty `system/message` event with
-  `surfaceOp: { op: "replace", startSeq, endSeq }` — the same surface-replacement mechanism compaction uses.
-  `assistant/message` may not carry `sourceEventSeqs` in 0.2.1, so the placeholder is a `system/message`;
-  it has empty content and is skipped by `deriveEventMessage`, hence it never reaches the model.
-- Session format v4 also requires a `system/message` to (a) carry `source.kind: "system-prompt"` and
-  (b) match an **open turn and step**. The command runs between turns, so the host opens a short synthetic
-  turn/step, appends the placeholder, then closes them: `turn/start` → `step/start` → `system/message` →
-  `step/end` → `turn/end`.
+- Appends a `user/message` event carrying `surfaceOp: { op: "replace", startSeq, endSeq }` — the same
+  surface-replacement mechanism compaction uses. Session format v4 does not allow `system/message` outside an
+  open turn/step, and fabricating a turn desynchronizes the runtime's turn counter, so the replacement is a
+  `user/message` (the one surface event allowed between turns).
+- The replacement's content is a single zero-width text block (`U+200B`) with `source.kind: "local-rewind"`;
+  the client projection hides its transcript row, and the model sees at most one zero-width token.
 - Records the shadowed ranges/turns in `data.localRewind` and exposes them through a `localRewind`
   session projection.
 

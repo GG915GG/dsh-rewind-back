@@ -33,12 +33,11 @@ DSH 有压缩、分支和会话级操作，但没法快速收回一条说错的�
 **Host 半边**（`lib/index.js`）
 
 - 注册 `/rewind` 命令。
-- 追加一条空内容的 `system/message` 事件，带 `surfaceOp: { op: "replace", startSeq, endSeq }`，与 compaction
-  使用同一套 surface replacement 机制。0.2.1 里 `assistant/message` 不允许携带 `sourceEventSeqs`，所以占位
-  事件用 `system/message`；它内容为空，会被 `deriveEventMessage` 跳过，因此永远进不了模型上下文。
-- session format v4 还要求 `system/message`（a）带 `source.kind: "system-prompt"`，（b）匹配一个**开着的
-  turn 和 step**。撤回命令在回合之外运行，所以 Host 先临时开一个 turn/step，追加占位事件，再关掉：
-  `turn/start` → `step/start` → `system/message` → `step/end` → `turn/end`。
+- 追加一条 `user/message` 事件，带 `surfaceOp: { op: "replace", startSeq, endSeq }`，与 compaction 使用同一套
+  surface replacement 机制。session format v4 不允许在回合外写 `system/message`，而伪造 turn 会让运行时的
+  turn 计数器错位，所以占位事件改用 `user/message`（回合外唯一允许的 surface 事件）。
+- 占位内容是一个零宽字符（`U+200B`），`source.kind: "local-rewind"`；浏览器 projection 会把这个占位行隐藏，
+  模型最多只看到一个零宽 token。
 - 把被隐藏的范围和回合记录在 `data.localRewind` 里，并通过 `localRewind` session projection 暴露给浏览器。
 
 **浏览器半边**（`lib/client.js`）

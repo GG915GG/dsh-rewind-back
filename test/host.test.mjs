@@ -65,19 +65,18 @@ console.log('b64 result:', JSON.stringify(result));
 if (result.kind !== 'success') throw new Error('b64 handler failed');
 if (session.surface.nodes.length !== 2) throw new Error('surface not truncated: ' + JSON.stringify(session.surface.nodes));
 const order = session.appends.map((item) => item.type).join(',');
-if (order !== 'turn/start,step/start,system/message,step/end,turn/end') {
+if (order !== 'user/message') {
   throw new Error('unexpected append order: ' + order);
 }
-const placeholder = session.appends.find((item) => item.type === 'system/message');
-if (placeholder === undefined) throw new Error('missing system/message placeholder');
-if (placeholder.data.turn !== 4 || placeholder.data.step !== 1) {
-  throw new Error('placeholder must use the synthetic turn/step, got ' + JSON.stringify([placeholder.data.turn, placeholder.data.step]));
+const placeholder = session.appends.find((item) => item.type === 'user/message');
+if (placeholder === undefined) throw new Error('missing user/message placeholder');
+if (placeholder.data.role !== 'user' || placeholder.data.source?.kind !== 'local-rewind') {
+  throw new Error('placeholder must be a user/message with local-rewind source');
 }
-if (typeof placeholder.data.message.id !== 'string' || placeholder.data.message.id.length === 0) throw new Error('system message id must be nonempty');
-const sourceKind = placeholder.data.message.source?.kind;
-if (sourceKind !== 'system-prompt') {
-  throw new Error('system message must carry the system-prompt source, got ' + JSON.stringify(sourceKind));
+if (placeholder.data.content?.[0]?.type !== 'text' || placeholder.data.content[0].text !== '\u200b') {
+  throw new Error('placeholder content must be a zero-width text block');
 }
+if (typeof placeholder.data.id !== 'string' || placeholder.data.id.length === 0) throw new Error('message id must be nonempty');
 if (placeholder.data.localRewind.startSeq !== 1) throw new Error('missing localRewind marker');
 if (!placeholder.data.localRewind.turns.includes(2)) throw new Error('missing shadowed turn');
 if (placeholder.data.localRewind.fromTurn !== 2) throw new Error('wrong fromTurn');
