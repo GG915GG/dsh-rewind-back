@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.1 — 2026-11-06
+
+- **Feature:** `ask_user_question` answers (the question-reply card introduced in DSH 0.2.2) are now rewindable.
+  The card renders its own action bar inside `[data-question-reply]` without `data-clock`, so the old scan never
+  reached it; the button is now injected there too, and the reply counts as a rewind anchor for `/rewind <n>`.
+- **Fix:** a card answered through the live panel has no message event at all — the question sits in
+  `tool/call` and the answer in `tool/result` — so matching the card's rendered text always failed with
+  "没有找到与按钮对应的用户消息". The card's button now rewinds the user prompt that started that turn, which
+  removes the card and everything after it.
+- **Fix:** matching a question-reply button used to be impossible — the browser sends the rendered
+  "question + chosen answer" text while the event stores the answer payload as JSON. Anchors now carry the
+  question and answer snippets, matched before the loose substring rule so an earlier message quoted inside the
+  question cannot win. The receipt shows a readable "question — 回答" summary instead of raw JSON.
+- **UI:** the button is an icon button that matches DSH's own message action row (28px hit area, 15px glyph,
+  17px on turn-tail rows, tertiary label colour, `--dsw-radius-sm`, hover-only background) instead of a text pill.
+- **Fix:** hidden rows no longer flash when a conversation is opened. Hiding used to run only on `apply()`, after
+  a click, and on an 800 ms poll, so the full transcript painted first. It now runs in the same microtask that
+  renders a row (MutationObserver → `sweepSoon`) and on every `localRewind` projection update (the face's
+  `subscribe`), with a 400 ms poll only as a fallback.
+- **Fix:** a failed rewind leaves a `command/done` error row (`>_ rewind · 没有找到与按钮对应的用户消息。`) in the
+  transcript forever. Those rows are now hidden regardless of the `receipt` policy — the alert already reported
+  the failure.
+- **Manifest:** declares `engines.dsh` (`^0.2.1-rc.2`). DSH 0.2.2 no longer reads
+  `dsh.compatibility.dshReleases` at all, so that field alone no longer reports support.
+
 ## 0.3.0 — 2026-10-23
 
 - **Fix:** the surface replacement carrier is now a `user/message`, not a `system/message`.

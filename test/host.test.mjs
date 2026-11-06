@@ -107,4 +107,55 @@ const result2 = await command.handler({ agent: { session: session2 }, rawInput: 
 console.log('numeric result:', JSON.stringify(result2));
 if (result2.kind !== 'success') throw new Error('numeric handler failed');
 if (session2.surface.nodes.length !== 3) throw new Error('numeric truncation wrong');
+
+// ask_user_question replies are user/message events whose text is the answer
+// payload as JSON while the bubble shows "question + chosen answer". The button
+// must resolve them, and /rewind <n> must count them as anchors.
+const replySession = makeSession(['22211124214']);
+const replyEvent = {
+  seq: 1,
+  type: 'user/message',
+  time: Date.now(),
+  data: {
+    id: 'm-reply',
+    role: 'user',
+    source: { kind: 'user-question-reply', callId: 'c1', outcome: 'answered' },
+    content: [{
+      type: 'text',
+      text: JSON.stringify({
+        kind: 'answer_to_pending_question',
+        tool: 'ask_user_question',
+        callId: 'c1',
+        questions: [{ id: 'q1', header: '需要确认', question: '你发的 "22211124214" 我看不出具体意图。想让我做什么？' }],
+        answers: [{ id: 'q1', selected: [], custom: '这是个数字要处理' }],
+      }),
+    }],
+  },
+};
+replySession.log[1] = replyEvent;
+replySession.events[1] = replyEvent;
+replySession.surface.nodes.push(1);
+
+const rendered = '需要确认\n你发的 "22211124214" 我看不出具体意图。想让我做什么？\n这是个数字要处理';
+const encodedReply = Buffer.from(rendered, 'utf8').toString('base64url');
+const replyResult = await command.handler({ agent: { session: replySession }, rawInput: `b64:${encodedReply}` });
+console.log('question-reply result:', JSON.stringify(replyResult));
+if (replyResult.kind !== 'success') throw new Error('question-reply rewind failed: ' + JSON.stringify(replyResult));
+if (!replyResult.text.includes('这是个数字要处理')) throw new Error('receipt lost the chosen answer');
+const replyPlaceholder = replySession.appends.at(-1);
+if (replyPlaceholder.options.surfaceOp.startSeq !== 1 || replyPlaceholder.options.surfaceOp.endSeq !== 1) {
+  throw new Error('question-reply surfaceOp wrong: ' + JSON.stringify(replyPlaceholder.options.surfaceOp));
+}
+if (replySession.surface.nodes.length !== 2 || replySession.surface.nodes[1] !== replyPlaceholder.seq) {
+  throw new Error('question-reply truncation wrong: ' + JSON.stringify(replySession.surface.nodes));
+}
+
+// The reply is the newest anchor, so "1" selects it by number too.
+const replySession2 = makeSession(['first']);
+replySession2.log[1] = replyEvent;
+replySession2.events[1] = replyEvent;
+replySession2.surface.nodes.push(1);
+const numericReply = await command.handler({ agent: { session: replySession2 }, rawInput: '1' });
+if (numericReply.kind !== 'success') throw new Error('numeric rewind skipped the question reply: ' + JSON.stringify(numericReply));
+
 console.log('HOST TEST OK');

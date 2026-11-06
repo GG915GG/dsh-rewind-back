@@ -19,12 +19,12 @@
 
 A local **rewind / undo** button for [DeepSeek Harness](https://deepseek-harness.github.io/) Web.
 
-Hover any message, click **撤回** (rewind), and that message plus everything after it is removed from the
+Hover any message, click the undo icon, and that message plus everything after it is removed from the
 transcript and from the model-visible context — without leaving a trace in the model context and without
-destroying the underlying session log.
+destroying the underlying session log. `ask_user_question` answers (question-reply cards) carry the button too.
 
-> Status: experimental. Built and tested against DSH `0.2.1-rc.2`. The plugin uses internal session/DOM
-> APIs, so a DSH upgrade may break it.
+> Status: experimental. Built and tested against DSH `0.2.2-rc.1`; `engines.dsh` declares `^0.2.1-rc.2`.
+> The plugin uses internal session/DOM APIs, so a DSH upgrade may break it.
 
 ## Why
 
@@ -76,7 +76,8 @@ only grow, so that rule would also hide every message you send after the rewind 
 
 ## Install
 
-Requirements: DSH Web `0.2.1-rc.2` (desktop app or `dsh --profile web`), Node.js 20+ for development.
+Requirements: DSH Web `0.2.1-rc.2` or newer (`0.2.2-rc.1` is the tested release; desktop app or
+`dsh --profile web`), Node.js 20+ for development.
 
 Clone the repository somewhere stable, then link it into your DSH profile.
 
@@ -140,12 +141,15 @@ the new value is applied on the next recomposition; otherwise restart DSH.
 
 ## Compatibility and known limitations
 
-- Built for `0.2.1-rc.2`; the manifest declares exact compatibility. Other versions may work but are not
-  tested.
-- The button depends on DSH's current DOM (`div[data-clock]`, bubble structure). A front-end redesign will
-  break the injection; update the selectors in `lib/client.js`.
-- The browser calls the host command with a base64-encoded prefix of the bubble text. Duplicate messages can
-  resolve to the newest match.
+- Built and tested against `0.2.2-rc.1`; `engines.dsh` declares `^0.2.1-rc.2`. DSH 0.2.2 stopped reading
+  `dsh.compatibility.dshReleases`, so `engines.dsh` is the declaration that still counts.
+- The button depends on DSH's current DOM: `div[data-clock]` for ordinary messages, and the `_actions` bar
+  inside `[data-question-reply]` for `ask_user_question` answers. A front-end redesign will break the
+  injection; update `actionRows()` in `lib/client.js`.
+- The browser calls the host command with a base64-encoded prefix of the bubble text. A question card has no
+  message event of its own (its question lives in a `tool/call` and the answer in `tool/result`), so its button
+  resolves to the user prompt that started that turn and rewinds from there. Cards whose turn has no surviving
+  user prompt report "取不到这条消息的文字".
 - Rewinding while a turn is still running is refused; wait for the turn to end.
 - There is no built-in undo UI yet.
 

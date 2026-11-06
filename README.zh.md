@@ -16,10 +16,10 @@
 
 给 [DeepSeek Harness](https://deepseek-harness.github.io/) Web 用的本地**撤回 / 撤销**按钮。
 
-鼠标移到任意一条消息上，点「撤回」，这条消息以及它之后的全部对话就会从聊天记录和模型可见上下文里一起消失——
-不会在模型上下文里留下痕迹，也不会真正删掉底层 session 日志。
+鼠标移到任意一条消息上，点撤销图标，这条消息以及它之后的全部对话就会从聊天记录和模型可见上下文里一起消失——
+不会在模型上下文里留下痕迹，也不会真正删掉底层 session 日志。`ask_user_question` 的回答卡片（问答卡片）上也有这个按钮。
 
-> 状态：实验性。基于 DSH `0.2.1-rc.2` 开发和测试。插件用到了 session/DOM 内部接口，DSH 升级后可能失效。
+> 状态：实验性。基于 DSH `0.2.2-rc.1` 开发和测试，`engines.dsh` 声明 `^0.2.1-rc.2`。插件用到了 session/DOM 内部接口，DSH 升级后可能失效。
 
 ## 为什么
 
@@ -32,7 +32,7 @@ DSH 有压缩、分支和会话级操作，但没法快速收回一条说错的�
 
 ## 功能
 
-- 在每条消息的复制/时间操作区旁注入「撤回」按钮（用户气泡和助手回合结尾都有）。
+- 在每条消息的复制/时间操作区旁注入撤销图标按钮（用户气泡、助手回合结尾、`ask_user_question` 的问答卡片都有）。
 - 点击后撤回所选消息及其之后的全部消息。
 - 用 surface replacement 截断模型上下文，撤回掉的消息不再计费。
 - 命令回执和撤回标记本身不会进入模型上下文。
@@ -66,7 +66,7 @@ DSH 有压缩、分支和会话级操作，但没法快速收回一条说错的�
 
 ## 安装
 
-要求：DSH Web `0.2.1-rc.2`（桌面版或 `dsh --profile web`），开发需要 Node.js 20+。
+要求：DSH Web `0.2.1-rc.2` 及以上（在 `0.2.2-rc.1` 上实测；桌面版或 `dsh --profile web`），开发需要 Node.js 20+。
 
 把仓库克隆到一个固定位置，然后链接进 DSH profile：
 
@@ -128,10 +128,14 @@ cmd /c mklink /J "%USERPROFILE%\.dsh\profiles\desktop\node_modules\dsh-rewind-ba
 
 ## 兼容性与已知限制
 
-- 只针对 `0.2.1-rc.2` 构建，manifest 里精确声明兼容版本；其它版本未测试。
-- 按钮依赖 DSH 当前的 DOM 结构（`div[data-clock]`、气泡层级）。前端改版会导致注入失效，需要同步修改
-  `lib/client.js` 里的选择器。
-- 浏览器通过消息文本的 base64 前缀调用 host 命令，重名消息可能命中较新的一条。
+- 基于 `0.2.2-rc.1` 开发和测试；`engines.dsh` 声明 `^0.2.1-rc.2`。DSH 0.2.2 已不再读取
+  `dsh.compatibility.dshReleases`，只有 `engines.dsh` 还算数。
+- 按钮依赖 DSH 当前的 DOM 结构：普通消息是 `div[data-clock]`，`ask_user_question` 的回答卡片则是
+  `[data-question-reply]` 里那条 `_actions` 栏。前端改版会导致注入失效，需要同步修改 `lib/client.js`
+  的 `actionRows()`。
+- 浏览器通过消息文本的 base64 前缀调用 host 命令。问答卡片本身没有消息事件（问题在 `tool/call`，答案在
+  `tool/result`），所以卡片上的按钮会解析成「这一轮开始时的用户提问」，从那里撤回；找不到对应提问时会提示
+  「取不到这条消息的文字」。
 - 回合还在跑时不允许撤回，等回合结束再点。
 - 目前没有内置的「撤销撤回」UI。
 
