@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.3.2 — 2026-11-06
+
+- **Fix:** a rewind that only covered part of a turn made the transcript hide the **whole turn**. The projection
+  recorded every turn a shadowed message belonged to, and the browser hides `[data-chat-turn]` rows wholesale, so
+  surviving messages of that turn (an earlier prompt, a question card, tool results) disappeared from the UI while
+  the model still saw them. `fullyShadowedTurns()` now records a turn only when every surface node of that turn is
+  inside the replaced range.
+- **Fix:** for a row that carries a sequence anchor, the replacement ranges are now authoritative; the recorded
+  turns only decide grouped rows that have no anchor of their own. This also repairs markers already written by
+  0.3.1 and earlier — no session migration needed.
+
 ## 0.3.1 — 2026-11-06
 
 - **Feature:** `ask_user_question` answers (the question-reply card introduced in DSH 0.2.2) are now rewindable.

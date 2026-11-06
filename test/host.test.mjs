@@ -158,4 +158,37 @@ replySession2.surface.nodes.push(1);
 const numericReply = await command.handler({ agent: { session: replySession2 }, rawInput: '1' });
 if (numericReply.kind !== 'success') throw new Error('numeric rewind skipped the question reply: ' + JSON.stringify(numericReply));
 
+// A partially shadowed turn must not be recorded: the transcript would hide the
+// whole turn while the model keeps its surviving messages.
+const partial = makeSession(['first prompt']);
+const assistant = {
+  seq: 1,
+  type: 'assistant/message',
+  time: Date.now(),
+  data: { turn: 1, step: 1, message: { role: 'assistant', content: [{ type: 'text', text: 'reply' }] } },
+};
+const steered = {
+  seq: 2,
+  type: 'user/message',
+  time: Date.now(),
+  data: { source: { kind: 'user' }, content: [{ type: 'text', text: 'steered prompt' }] },
+};
+const steeredReply = {
+  seq: 3,
+  type: 'assistant/message',
+  time: Date.now(),
+  data: { turn: 1, step: 2, message: { role: 'assistant', content: [{ type: 'text', text: 'reply two' }] } },
+};
+partial.log[1] = assistant;
+partial.log[2] = steered;
+partial.log[3] = steeredReply;
+partial.surface.nodes.push(1, 2, 3);
+const encodedSteered = Buffer.from('steered prompt', 'utf8').toString('base64url');
+const partialResult = await command.handler({ agent: { session: partial }, rawInput: `b64:${encodedSteered}` });
+if (partialResult.kind !== 'success') throw new Error('partial-turn rewind failed: ' + JSON.stringify(partialResult));
+const partialPlaceholder = partial.appends.at(-1);
+if (partialPlaceholder.data.localRewind.turns.length !== 0) {
+  throw new Error('partially shadowed turn must not be recorded: ' + JSON.stringify(partialPlaceholder.data.localRewind.turns));
+}
+
 console.log('HOST TEST OK');

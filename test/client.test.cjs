@@ -85,6 +85,11 @@ const laterFlowRow = makeElement('div');
 laterFlowRow.setAttribute('data-chat-anchor-key', '30:user');
 const laterTurnRow = makeElement('div');
 laterTurnRow.setAttribute('data-chat-turn', '2');
+// A row inside a recorded turn whose own sequence survives the range: it must stay
+// visible, because the model still sees that message.
+const partialTurnRow = makeElement('div');
+partialTurnRow.setAttribute('data-chat-turn', '1');
+partialTurnRow.setAttribute('data-chat-anchor-key', '40:user');
 
 // Command receipts: the old one has a later user turn (must disappear under the
 // default "turn" policy); the fresh one is the last row (must stay visible).
@@ -115,7 +120,7 @@ const document = {
     if (selector === 'div[data-clock]' || selector === 'div[data-clock="start"]') return [row];
     if (selector === '[data-question-reply]') return [replyRoot];
     if (selector.includes('data-chat-anchor-key')) return [flowRow, laterFlowRow];
-    if (selector.includes('data-chat-turn')) return [turnRow, laterTurnRow];
+    if (selector.includes('data-chat-turn')) return [turnRow, laterTurnRow, partialTurnRow];
     if (selector.includes('data-chat-flow-kind')) return [receiptOld, laterUserFlow, receiptFresh, receiptError];
     return [];
   },
@@ -190,6 +195,9 @@ if (flowRow.style.display !== 'none') throw new Error('shadowed flow row was not
 if (turnRow.style.display !== 'none') throw new Error('shadowed turn row was not hidden');
 if (laterFlowRow.style.display === 'none') throw new Error('post-rewind flow row must stay visible');
 if (laterTurnRow.style.display === 'none') throw new Error('post-rewind turn row must stay visible');
+if (partialTurnRow.style.display === 'none') {
+  throw new Error('a row whose own seq survives the range must stay visible');
+}
 if (receiptOld.style.display !== 'none') throw new Error('past-turn receipt must be hidden by default');
 if (receiptFresh.style.display === 'none') throw new Error('current receipt must stay visible by default');
 if (receiptError.style.display !== 'none') throw new Error('failure receipt must be hidden by default');
