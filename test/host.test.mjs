@@ -190,6 +190,9 @@ const partialPlaceholder = partial.appends.at(-1);
 if (partialPlaceholder.data.localRewind.turns.length !== 0) {
   throw new Error('partially shadowed turn must not be recorded: ' + JSON.stringify(partialPlaceholder.data.localRewind.turns));
 }
+if (partialPlaceholder.data.localRewind.ids.some((id) => String(id).startsWith('turn-process'))) {
+  throw new Error('partially shadowed turn must keep its process row: ' + JSON.stringify(partialPlaceholder.data.localRewind.ids));
+}
 
 // An empty user message (attachment-only send) must never absorb a fuzzy match:
 // `wanted.startsWith("")` is always true, which rewound 400+ messages in the wild.
@@ -265,6 +268,9 @@ for (const expected of ['u-1', 'a-1', 'tr-1']) {
 }
 if (!richRewind.ids.includes('assistant-step1:1')) {
   throw new Error('assistant-step identity missing (0.2.2 keys assistant rows by turn:step): ' + JSON.stringify(richRewind.ids));
+}
+if (!richRewind.ids.includes('turn-process1')) {
+  throw new Error('turn-process identity missing for a fully shadowed turn: ' + JSON.stringify(richRewind.ids));
 }
 if (!richRewind.ids.some((id) => typeof id === 'string' && id.startsWith('rewind-back-'))) {
   throw new Error('placeholder id not recorded for hiding');
