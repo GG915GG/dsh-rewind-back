@@ -263,6 +263,9 @@ const richRewind = richPlaceholder.data.localRewind;
 for (const expected of ['u-1', 'a-1', 'tr-1']) {
   if (!richRewind.ids.includes(expected)) throw new Error('shadowed message id missing: ' + expected);
 }
+if (!richRewind.ids.includes('assistant-step1:1')) {
+  throw new Error('assistant-step identity missing (0.2.2 keys assistant rows by turn:step): ' + JSON.stringify(richRewind.ids));
+}
 if (!richRewind.ids.some((id) => typeof id === 'string' && id.startsWith('rewind-back-'))) {
   throw new Error('placeholder id not recorded for hiding');
 }
@@ -273,6 +276,17 @@ const richState = projection.apply(projection.init(), richPlaceholder);
 const richView = projection.wire.view(richState);
 if (!richView.ids.includes('u-1') || !richView.callIds.includes('call-9')) {
   throw new Error('projection view lost ids/callIds: ' + JSON.stringify(richView));
+}
+
+// A neutralized placeholder (repaired rewind) carries only ids: it hides its row
+// without shadowing anything.
+const markerState = projection.apply(projection.init(), {
+  data: { localRewind: { ids: ['rewind-back-neutralized'] } },
+});
+const markerView = projection.wire.view(markerState);
+if (!markerView.ids.includes('rewind-back-neutralized')) throw new Error('hide-only marker id lost');
+if (markerView.ranges.length !== 0 || markerView.turns.length !== 0) {
+  throw new Error('hide-only marker must not shadow ranges or turns');
 }
 
 console.log('HOST TEST OK');

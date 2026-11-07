@@ -3,10 +3,17 @@
 ## 0.3.3 — 2026-11-07
 
 - **Fix:** hidden rows never disappeared in DSH 0.2.2 unless a whole turn was recorded. 0.2.2 renders anchor keys
-  as `<kind length>:<kind><message id>` (tool rows: `call:<callId>`) — no sequence anywhere — so the old
-  "parse a seq out of the key" hiding path silently matched nothing, and a partially-shadowed turn (which records
-  no turn) stayed fully visible. The host now records the shadowed **message ids and tool call ids** in the
-  projection, and the browser hides rows whose anchor key contains a recorded id — precise per row.
+  as `<kind length>:<kind><id>` (tool rows: `call:<callId>`, groups wrap the key in a JSON array) — no sequence
+  anywhere — so the old "parse a seq out of the key" hiding path silently matched nothing, and a
+  partially-shadowed turn (which records no turn) stayed fully visible. The host now records the shadowed
+  **message ids and tool call ids** in the projection, and the browser hides rows whose anchor key names one of
+  them — precise per row.
+- **Fix:** assistant rows are keyed `assistant-step<turn>:<step>`, **not** by message id, so recording the
+  assistant message id hid the user's message but left the reply visible. The host records that identity too, and
+  the browser matches tokens with a boundary so `assistant-step2:1` never hides `assistant-step2:10`.
+- **Fix:** the projection's `stateVersion` is now 2 (it grew `ids`/`callIds`). A cache checkpoint written by 0.3.2
+  was accepted under the old version, then replayed through the new `apply`, which threw on the missing fields and
+  left the browser without any projection value at all; `apply` also normalizes a stale state shape now.
 - **Fix:** rows with an anchor key are decided by their id even inside a recorded turn, so over-broad turns written
   by 0.3.1 can no longer hide surviving messages; group wrappers combine id and turn so fully hidden groups leave
   no empty shell.

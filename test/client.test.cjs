@@ -97,6 +97,12 @@ partialTurnRow.setAttribute('data-chat-anchor-key', '7:messagem-partial-40');
 const toolRow = makeElement('div');
 toolRow.setAttribute('data-chat-anchor-key', 'call:call-77');
 toolRow.setAttribute('data-chat-call-id', 'call-77');
+// Assistant nodes are keyed `assistant-step<turn>:<step>`; the token must match
+// with a boundary so step 1 does not swallow step 10.
+const assistantStepRow = makeElement('div');
+assistantStepRow.setAttribute('data-chat-anchor-key', '14:assistant-step2:1');
+const assistantStepTenRow = makeElement('div');
+assistantStepTenRow.setAttribute('data-chat-anchor-key', '14:assistant-step2:10');
 
 // Command receipts: the old one has a later user turn (must disappear under the
 // default "turn" policy); the fresh one is the last row (must stay visible).
@@ -118,7 +124,7 @@ const projectionValue = {
   ranges: [{ start: 1, end: 3 }, { start: 7, end: 7 }],
   turns: [1],
   fromTurn: 1,
-  ids: ['m-shadowed-1', 'rewind-back-abc'],
+  ids: ['m-shadowed-1', 'rewind-back-abc', 'assistant-step2:1'],
   callIds: ['call-77'],
   receipt: 'turn',
 };
@@ -134,7 +140,7 @@ const document = {
     if (selector === 'div[data-clock]' || selector === 'div[data-clock="start"]') return [row];
     if (selector === '[data-question-reply]') return [replyRoot];
     if (selector.includes('data-chat-anchor-key')) {
-      return [flowRow, laterFlowRow, partialTurnRow, toolRow, turnRow, laterTurnRow];
+      return [flowRow, laterFlowRow, partialTurnRow, toolRow, assistantStepRow, assistantStepTenRow, turnRow, laterTurnRow];
     }
     if (selector.includes('data-chat-flow-kind')) return [receiptOld, laterUserFlow, receiptFresh, receiptError];
     return [];
@@ -211,6 +217,10 @@ if (turnRow.style.display !== 'none') throw new Error('shadowed turn row was not
 if (laterFlowRow.style.display === 'none') throw new Error('post-rewind flow row must stay visible');
 if (laterTurnRow.style.display === 'none') throw new Error('post-rewind turn row must stay visible');
 if (toolRow.style.display !== 'none') throw new Error('shadowed tool row was not hidden');
+if (assistantStepRow.style.display !== 'none') throw new Error('shadowed assistant step row was not hidden');
+if (assistantStepTenRow.style.display === 'none') {
+  throw new Error('assistant-step2:1 must not hide assistant-step2:10 (boundary match)');
+}
 // 7 is the kind length in "7:message<id>", not a sequence: a range covering 7
 // must not hide rows whose id was not recorded (the 0.3.2 seq-parse bug).
 if (laterFlowRow.style.display === 'none' && laterFlowRow.getAttribute('data-chat-anchor-key').indexOf('7:') === 0) {
