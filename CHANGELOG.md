@@ -2,6 +2,14 @@
 
 ## 0.3.3 — 2026-11-07
 
+- **Fix:** hidden rows never disappeared in DSH 0.2.2 unless a whole turn was recorded. 0.2.2 renders anchor keys
+  as `<kind length>:<kind><message id>` (tool rows: `call:<callId>`) — no sequence anywhere — so the old
+  "parse a seq out of the key" hiding path silently matched nothing, and a partially-shadowed turn (which records
+  no turn) stayed fully visible. The host now records the shadowed **message ids and tool call ids** in the
+  projection, and the browser hides rows whose anchor key contains a recorded id — precise per row.
+- **Fix:** rows with an anchor key are decided by their id even inside a recorded turn, so over-broad turns written
+  by 0.3.1 can no longer hide surviving messages; group wrappers combine id and turn so fully hidden groups leave
+  no empty shell.
 - **Fix:** an empty-text user message (an attachment-only send) absorbed every fuzzy button match:
   `wanted.startsWith("")` is always true, so clicking 撤回 on a turn whose prompt was already rewound matched the
   newest empty anchor and rewound **everything from that empty message on** (observed: 410 and 166 messages in one

@@ -84,7 +84,7 @@ if (placeholder.options.surfaceOp.startSeq !== 1 || placeholder.options.surfaceO
   throw new Error('wrong surfaceOp range: ' + JSON.stringify(placeholder.options.surfaceOp));
 }
 const projectionState = projection.apply(
-  { ranges: [], turns: [], fromTurns: [] },
+  { ranges: [], turns: [], fromTurns: [], ids: [], callIds: [] },
   { data: { localRewind: { startSeq: 1, endSeq: 2, turns: [2], fromTurn: 2 } } },
 );
 if (projectionState.ranges.length !== 1 || projectionState.ranges[0].start !== 1) {
@@ -220,5 +220,59 @@ const exactHit = await command.handler({
 });
 if (exactHit.kind !== 'success') throw new Error('exact match broken by the empty-anchor guard');
 if (exactHit.text.includes('没有文字')) throw new Error('exact match landed on the empty anchor');
+
+// 0.2.2 rows carry no sequence: the projection must record message ids and tool
+// call ids so the browser can match its `7:message<id>` / `call:<callId>` keys.
+const rich = makeSession([]);
+const richUser = {
+  seq: 0,
+  type: 'user/message',
+  time: Date.now(),
+  data: { id: 'u-1', source: { kind: 'user' }, content: [{ type: 'text', text: 'rich question' }] },
+};
+const richAssistant = {
+  seq: 1,
+  type: 'assistant/message',
+  time: Date.now(),
+  data: { turn: 1, step: 1, message: { id: 'a-1', role: 'assistant', content: [{ type: 'text', text: 'reply' }] } },
+};
+const richToolCall = {
+  seq: 2,
+  type: 'tool/call',
+  time: Date.now(),
+  data: { turn: 1, step: 2, callId: 'call-9', name: 'pwsh', arguments: '{}' },
+};
+const richToolResult = {
+  seq: 3,
+  type: 'tool/result',
+  time: Date.now(),
+  data: { turn: 1, step: 2, message: { id: 'tr-1', role: 'tool', source: { kind: 'tool', callId: 'call-9' }, content: [] }, isError: false },
+};
+rich.log[0] = richUser;
+rich.log[1] = richAssistant;
+rich.log[2] = richToolCall;
+rich.log[3] = richToolResult;
+rich.surface.nodes.push(0, 1, 2, 3);
+const richResult = await command.handler({
+  agent: { session: rich },
+  rawInput: `b64:${Buffer.from('rich question', 'utf8').toString('base64url')}`,
+});
+if (richResult.kind !== 'success') throw new Error('rich rewind failed: ' + JSON.stringify(richResult));
+const richPlaceholder = rich.appends.at(-1);
+const richRewind = richPlaceholder.data.localRewind;
+for (const expected of ['u-1', 'a-1', 'tr-1']) {
+  if (!richRewind.ids.includes(expected)) throw new Error('shadowed message id missing: ' + expected);
+}
+if (!richRewind.ids.some((id) => typeof id === 'string' && id.startsWith('rewind-back-'))) {
+  throw new Error('placeholder id not recorded for hiding');
+}
+for (const expected of ['call-9']) {
+  if (!richRewind.callIds.includes(expected)) throw new Error('shadowed callId missing: ' + expected);
+}
+const richState = projection.apply(projection.init(), richPlaceholder);
+const richView = projection.wire.view(richState);
+if (!richView.ids.includes('u-1') || !richView.callIds.includes('call-9')) {
+  throw new Error('projection view lost ids/callIds: ' + JSON.stringify(richView));
+}
 
 console.log('HOST TEST OK');

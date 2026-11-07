@@ -75,21 +75,28 @@ replyBar.appendChild(replyCopy);
 replyRoot.appendChild(replyBubble);
 replyRoot.appendChild(replyBar);
 
+// Rows in DSH 0.2.2 carry length-prefixed context keys (`<kind length>:<kind><id>`),
+// tool rows `call:<callId>`. The projection records shadowed message ids and call
+// ids; the ranges stay in the view but no row maps a seq, so they hide nothing.
 const flowRow = makeElement('div');
-flowRow.setAttribute('data-chat-anchor-key', '1:user');
+flowRow.setAttribute('data-chat-anchor-key', '7:messagem-shadowed-1');
 const turnRow = makeElement('div');
 turnRow.setAttribute('data-chat-turn', '1');
 // Rows created after the rewind: the user's next message and the reply. They
 // must stay visible; hiding `turn >= fromTurn` used to swallow them.
 const laterFlowRow = makeElement('div');
-laterFlowRow.setAttribute('data-chat-anchor-key', '30:user');
+laterFlowRow.setAttribute('data-chat-anchor-key', '7:messagem-later-9');
 const laterTurnRow = makeElement('div');
 laterTurnRow.setAttribute('data-chat-turn', '2');
-// A row inside a recorded turn whose own sequence survives the range: it must stay
+// A row inside a recorded turn whose own id survived the rewind: it must stay
 // visible, because the model still sees that message.
 const partialTurnRow = makeElement('div');
 partialTurnRow.setAttribute('data-chat-turn', '1');
-partialTurnRow.setAttribute('data-chat-anchor-key', '40:user');
+partialTurnRow.setAttribute('data-chat-anchor-key', '7:messagem-partial-40');
+// A tool call row inside the shadowed span: hidden through its call id.
+const toolRow = makeElement('div');
+toolRow.setAttribute('data-chat-anchor-key', 'call:call-77');
+toolRow.setAttribute('data-chat-call-id', 'call-77');
 
 // Command receipts: the old one has a later user turn (must disappear under the
 // default "turn" policy); the fresh one is the last row (must stay visible).
@@ -107,7 +114,14 @@ const receiptError = makeElement('div');
 receiptError.setAttribute('data-chat-flow-kind', 'command');
 receiptError.textContent = 'rewind · 没有找到与按钮对应的用户消息。';
 
-const projectionValue = { ranges: [{ start: 1, end: 3 }], turns: [1], fromTurn: 1, receipt: 'turn' };
+const projectionValue = {
+  ranges: [{ start: 1, end: 3 }, { start: 7, end: 7 }],
+  turns: [1],
+  fromTurn: 1,
+  ids: ['m-shadowed-1', 'rewind-back-abc'],
+  callIds: ['call-77'],
+  receipt: 'turn',
+};
 
 const document = {
   getElementById() { return null; },
@@ -119,8 +133,9 @@ const document = {
   querySelectorAll(selector) {
     if (selector === 'div[data-clock]' || selector === 'div[data-clock="start"]') return [row];
     if (selector === '[data-question-reply]') return [replyRoot];
-    if (selector.includes('data-chat-anchor-key')) return [flowRow, laterFlowRow];
-    if (selector.includes('data-chat-turn')) return [turnRow, laterTurnRow, partialTurnRow];
+    if (selector.includes('data-chat-anchor-key')) {
+      return [flowRow, laterFlowRow, partialTurnRow, toolRow, turnRow, laterTurnRow];
+    }
     if (selector.includes('data-chat-flow-kind')) return [receiptOld, laterUserFlow, receiptFresh, receiptError];
     return [];
   },
@@ -195,8 +210,14 @@ if (flowRow.style.display !== 'none') throw new Error('shadowed flow row was not
 if (turnRow.style.display !== 'none') throw new Error('shadowed turn row was not hidden');
 if (laterFlowRow.style.display === 'none') throw new Error('post-rewind flow row must stay visible');
 if (laterTurnRow.style.display === 'none') throw new Error('post-rewind turn row must stay visible');
+if (toolRow.style.display !== 'none') throw new Error('shadowed tool row was not hidden');
+// 7 is the kind length in "7:message<id>", not a sequence: a range covering 7
+// must not hide rows whose id was not recorded (the 0.3.2 seq-parse bug).
+if (laterFlowRow.style.display === 'none' && laterFlowRow.getAttribute('data-chat-anchor-key').indexOf('7:') === 0) {
+  throw new Error('kind-length number must not be read as a sequence');
+}
 if (partialTurnRow.style.display === 'none') {
-  throw new Error('a row whose own seq survives the range must stay visible');
+  throw new Error('a row whose own id survives the rewind must stay visible');
 }
 if (receiptOld.style.display !== 'none') throw new Error('past-turn receipt must be hidden by default');
 if (receiptFresh.style.display === 'none') throw new Error('current receipt must stay visible by default');
@@ -246,7 +267,7 @@ if (replyButton.children.length !== 1 || replyButton.children[0].tagName !== 'sv
 
   // A projection value that arrives after the rows rendered must hide them
   // immediately, not on the next poll tick.
-  projectionValue.ranges = [{ start: 1, end: 3 }, { start: 30, end: 30 }];
+  projectionValue.ids = ['m-shadowed-1', 'rewind-back-abc', 'm-later-9'];
   for (const listener of projectionListeners) listener();
   await new Promise((resolve) => setTimeout(resolve, 20));
   if (laterFlowRow.style.display !== 'none') throw new Error('projection update did not hide the row');
