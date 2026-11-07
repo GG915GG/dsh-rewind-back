@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.3 — 2026-11-07
+
+- **Fix:** an empty-text user message (an attachment-only send) absorbed every fuzzy button match:
+  `wanted.startsWith("")` is always true, so clicking 撤回 on a turn whose prompt was already rewound matched the
+  newest empty anchor and rewound **everything from that empty message on** (observed: 410 and 166 messages in one
+  click each, receipt reading "原话：(这条消息没有文字)"). Fuzzy passes now skip empty-text anchors; an unmatched
+  target reports an error instead.
+
 ## 0.3.2 — 2026-11-06
 
 - **Fix:** a rewind that only covered part of a turn made the transcript hide the **whole turn**. The projection

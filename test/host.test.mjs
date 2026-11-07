@@ -191,4 +191,34 @@ if (partialPlaceholder.data.localRewind.turns.length !== 0) {
   throw new Error('partially shadowed turn must not be recorded: ' + JSON.stringify(partialPlaceholder.data.localRewind.turns));
 }
 
+// An empty user message (attachment-only send) must never absorb a fuzzy match:
+// `wanted.startsWith("")` is always true, which rewound 400+ messages in the wild.
+const emptySession = makeSession([]);
+const emptyUser = {
+  seq: 0,
+  type: 'user/message',
+  time: Date.now(),
+  data: { source: { kind: 'user' }, content: [{ type: 'text', text: '' }] },
+};
+const realUser = {
+  seq: 1,
+  type: 'user/message',
+  time: Date.now(),
+  data: { source: { kind: 'user' }, content: [{ type: 'text', text: 'real question' }] },
+};
+emptySession.log[0] = emptyUser;
+emptySession.log[1] = realUser;
+emptySession.surface.nodes.push(0, 1);
+const miss = await command.handler({
+  agent: { session: emptySession },
+  rawInput: `b64:${Buffer.from('一条不存在的消息', 'utf8').toString('base64url')}`,
+});
+if (miss.kind !== 'error') throw new Error('empty anchor absorbed a fuzzy match: ' + JSON.stringify(miss));
+const exactHit = await command.handler({
+  agent: { session: emptySession },
+  rawInput: `b64:${Buffer.from('real question', 'utf8').toString('base64url')}`,
+});
+if (exactHit.kind !== 'success') throw new Error('exact match broken by the empty-anchor guard');
+if (exactHit.text.includes('没有文字')) throw new Error('exact match landed on the empty anchor');
+
 console.log('HOST TEST OK');
